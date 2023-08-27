@@ -758,7 +758,7 @@ where
                     let missing_space =
                         port_height - (height_intermediate - height_before) + margin;
                     if missing_space > 0.0 {
-                        ui.add_space(missing_space);
+                        ui.add_space(missing_space * pan_zoom.zoom);
                     }
 
                     self.graph[self.node_id].user_data.separator(
@@ -871,8 +871,8 @@ where
                 (0..inner_ports)
                     .map(|k| {
                         (port_rect.center_top()
-                            + Vec2::new(0.0, 5.0)
-                            + Vec2::new(0.0, 10.0) * k as f32)
+                            + Vec2::new(0.0, 5.0) * pan_zoom.zoom
+                            + Vec2::new(0.0, 10.0) * k as f32 * pan_zoom.zoom)
                     })
                     .collect(),
             );
