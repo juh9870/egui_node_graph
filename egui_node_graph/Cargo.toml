@@ -9,7 +9,7 @@ keywords = ["ui", "egui", "graph", "node"]
 authors = ["setzer22"]
 edition = "2021"
 readme = "../README.md"
-workspace = ".."
+workspace = "../.."
 
 [features]
 persistence = ["serde", "slotmap/serde", "smallvec/serde", "egui/persistence"]
