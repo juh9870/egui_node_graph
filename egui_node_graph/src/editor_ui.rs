@@ -870,9 +870,9 @@ where
                 param_id,
                 (0..inner_ports)
                     .map(|k| {
-                        (port_rect.center_top()
+                        port_rect.center_top()
                             + Vec2::new(0.0, 5.0) * pan_zoom.zoom
-                            + Vec2::new(0.0, 10.0) * k as f32 * pan_zoom.zoom)
+                            + Vec2::new(0.0, 10.0) * k as f32 * pan_zoom.zoom
                     })
                     .collect(),
             );
