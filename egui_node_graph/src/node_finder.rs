@@ -4,7 +4,7 @@ use crate::{color_hex_utils::*, CategoryTrait, NodeTemplateIter, NodeTemplateTra
 
 use egui::*;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "persistence", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeFinder<NodeTemplate> {
     pub query: String,
