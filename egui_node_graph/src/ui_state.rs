@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 const MIN_ZOOM: f32 = 0.2;
 const MAX_ZOOM: f32 = 2.0;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "persistence", derive(Serialize, Deserialize))]
 pub struct GraphEditorState<NodeData, DataType, ValueType, NodeTemplate, UserState> {
     pub graph: Graph<NodeData, DataType, ValueType>,
@@ -67,7 +67,7 @@ fn _default_clip_rect() -> Rect {
     Rect::NOTHING
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "persistence", derive(Serialize, Deserialize))]
 pub struct PanZoom {
     pub pan: Vec2,
