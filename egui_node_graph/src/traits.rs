@@ -1,4 +1,6 @@
 use super::*;
+use crate::port_shapes::draw_circle_port;
+use egui::{Color32, Rect, Ui};
 
 /// This trait must be implemented by the `ValueType` generic parameter of the
 /// [`Graph`]. The trait allows drawing custom inline widgets for the different
@@ -52,9 +54,21 @@ pub trait WidgetValueTrait: Default {
 /// This trait must be implemented by the `DataType` generic parameter of the
 /// [`Graph`]. This trait tells the library how to visually expose data types
 /// to the user.
-pub trait DataTypeTrait<UserState>: PartialEq + Eq {
+pub trait DataTypeTrait<UserState>: DataTypeMatcher<UserState> {
     /// The associated port color of this datatype
     fn data_type_color(&self, user_state: &mut UserState) -> egui::Color32;
+
+    fn draw_port(
+        &self,
+        ui: &mut Ui,
+        _user_state: &mut UserState,
+        wide_port: bool,
+        port_rect: Rect,
+        zoom: f32,
+        port_color: Color32,
+    ) {
+        draw_circle_port(ui, wide_port, port_rect, zoom, port_color)
+    }
 
     /// The name of this datatype. Return type is specified as Cow<str> because
     /// some implementations will need to allocate a new string to provide an

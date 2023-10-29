@@ -41,6 +41,8 @@ pub use editor_ui::*;
 pub mod traits;
 pub use traits::*;
 
+pub mod port_shapes;
+
 mod utils;
 
 mod color_hex_utils;

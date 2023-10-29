@@ -598,6 +598,19 @@ fn draw_connection(
         connection_stroke,
     );
 
+    painter.circle(
+        src_pos,
+        connection_stroke.width / 2.0,
+        color,
+        Stroke::new(1.0, color),
+    );
+    painter.circle(
+        dst_pos,
+        connection_stroke.width / 2.0,
+        color,
+        Stroke::new(1.0, color),
+    );
+
     painter.add(bezier);
 }
 
@@ -716,6 +729,28 @@ where
             ui.add_space(margin.y);
             title_height = ui.min_size().y;
 
+            let outputs = self.graph[self.node_id].outputs.clone();
+            for (param_name, param_id) in outputs {
+                let height_before = ui.min_rect().bottom();
+                responses.extend(
+                    self.graph[self.node_id]
+                        .user_data
+                        .output_ui(ui, self.node_id, self.graph, user_state, &param_name)
+                        .into_iter(),
+                );
+
+                self.graph[self.node_id].user_data.separator(
+                    ui,
+                    self.node_id,
+                    AnyParameterId::Output(param_id),
+                    self.graph,
+                    user_state,
+                );
+
+                let height_after = ui.min_rect().bottom();
+                output_port_heights.push((height_before + height_after) / 2.0);
+            }
+
             // First pass: Draw the inner fields. Compute port heights
             let inputs = self.graph[self.node_id].inputs.clone();
             for (param_name, param_id) in inputs {
@@ -792,34 +827,12 @@ where
                 }
             }
 
-            let outputs = self.graph[self.node_id].outputs.clone();
-            for (param_name, param_id) in outputs {
-                let height_before = ui.min_rect().bottom();
-                responses.extend(
-                    self.graph[self.node_id]
-                        .user_data
-                        .output_ui(ui, self.node_id, self.graph, user_state, &param_name)
-                        .into_iter(),
-                );
-
-                self.graph[self.node_id].user_data.separator(
-                    ui,
-                    self.node_id,
-                    AnyParameterId::Output(param_id),
-                    self.graph,
-                    user_state,
-                );
-
-                let height_after = ui.min_rect().bottom();
-                output_port_heights.push((height_before + height_after) / 2.0);
-            }
-
-            responses.extend(
-                self.graph[self.node_id]
-                    .user_data
-                    .bottom_ui(ui, self.node_id, self.graph, user_state)
-                    .into_iter(),
-            );
+            responses.extend(self.graph[self.node_id].user_data.bottom_ui(
+                ui,
+                self.node_id,
+                self.graph,
+                user_state,
+            ));
         });
 
         // Second pass, iterate again to draw the ports. This happens outside
@@ -917,17 +930,14 @@ where
                 port_type.data_type_color(user_state)
             };
 
-            if wide_port {
-                ui.painter()
-                    .rect_filled(port_rect, 5.0 * pan_zoom.zoom, port_color);
-            } else {
-                ui.painter().circle(
-                    port_rect.center(),
-                    5.0 * pan_zoom.zoom,
-                    port_color,
-                    Stroke::NONE,
-                );
-            }
+            port_type.draw_port(
+                ui,
+                user_state,
+                wide_port,
+                port_rect,
+                pan_zoom.zoom,
+                port_color,
+            );
 
             if connections > 0 {
                 if let AnyParameterId::Input(input) = param_id {
@@ -978,12 +988,16 @@ where
             }
 
             if let Some((origin_node, origin_param)) = ongoing_drag {
-                if origin_node != node_id {
+                if origin_node != node_id && close_enough {
                     // Don't allow self-loops
-                    if graph.any_param_type(origin_param).unwrap() == port_type && close_enough {
-                        match (param_id, origin_param) {
-                            (AnyParameterId::Input(input), AnyParameterId::Output(output))
-                            | (AnyParameterId::Output(output), AnyParameterId::Input(input)) => {
+                    match (param_id, origin_param) {
+                        (AnyParameterId::Input(input), AnyParameterId::Output(output))
+                        | (AnyParameterId::Output(output), AnyParameterId::Input(input)) => {
+                            if graph
+                                .get_input(input)
+                                .typ
+                                .can_connect_to(&graph.get_output(output).typ, user_state)
+                            {
                                 let input_hook =
                                     nearest_hook.unwrap_or(graph.connections(input).len());
 
@@ -1000,8 +1014,8 @@ where
                                     }
                                 }
                             }
-                            _ => { /* Ignore in-in or out-out connections */ }
                         }
+                        _ => { /* Ignore in-in or out-out connections */ }
                     }
                 }
             }
