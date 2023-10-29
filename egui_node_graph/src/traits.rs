@@ -87,6 +87,18 @@ pub trait DataTypeTrait<UserState>: PartialEq + Eq {
     fn name(&self) -> std::borrow::Cow<str>;
 }
 
+pub trait DataTypeMatcher<UserState> {
+    fn can_connect_to(&self, target: &Self, user_state: &UserState) -> bool;
+}
+
+pub trait DataTypeMatcherMarker {}
+
+impl<T: PartialEq + DataTypeMatcherMarker, UserState> DataTypeMatcher<UserState> for T {
+    fn can_connect_to(&self, target: &Self, _user_state: &UserState) -> bool {
+        self == target
+    }
+}
+
 /// This trait must be implemented for the `NodeData` generic parameter of the
 /// [`Graph`]. This trait allows customizing some aspects of the node drawing.
 pub trait NodeDataTrait

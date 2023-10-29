@@ -25,6 +25,7 @@ pub type ConnLocations = std::collections::HashMap<InputId, Vec<Pos2>>;
 pub type NodeRects = std::collections::HashMap<NodeId, Rect>;
 
 const DISTANCE_TO_CONNECT: f32 = 10.0;
+const DISTANCE_TO_CONNECT_SQUARED: f32 = DISTANCE_TO_CONNECT * DISTANCE_TO_CONNECT;
 
 /// Nodes communicate certain events to the parent graph when drawn. There is
 /// one special `User` variant which can be used by users as the return value
@@ -322,18 +323,27 @@ where
                 Value,
             >(
                 graph: &Graph<NodeData, DataType, ValueType>,
+                user_state: &UserState,
                 port_type: &DataType,
                 ports: &SlotMap<Key, Value>,
                 port_locations: &PortLocations,
                 cursor_pos: Pos2,
+                pan_zoom: &PanZoom,
             ) -> Pos2 {
                 ports
                     .iter()
                     .find_map(|(port_id, _)| {
-                        let compatible_ports = graph
-                            .any_param_type(port_id.into())
-                            .map(|other| other == port_type)
-                            .unwrap_or(false);
+                        let compatible_ports = {
+                            match port_id.into() {
+                                AnyParameterId::Input(input) => graph
+                                    .try_get_input(input)
+                                    .map(|e| e.typ.can_connect_to(port_type, user_state)),
+                                AnyParameterId::Output(output) => graph
+                                    .try_get_output(output)
+                                    .map(|e| port_type.can_connect_to(&e.typ, user_state)),
+                            }
+                            .unwrap_or(false)
+                        };
 
                         if compatible_ports {
                             port_locations.get(&port_id.into()).and_then(|hooks| {
@@ -346,7 +356,10 @@ where
                                             .unwrap()
                                     })
                                     .filter(|nearest_hook| {
-                                        nearest_hook.distance(cursor_pos) < DISTANCE_TO_CONNECT
+                                        nearest_hook.distance_sq(cursor_pos)
+                                            < DISTANCE_TO_CONNECT_SQUARED
+                                                * pan_zoom.zoom
+                                                * pan_zoom.zoom
                                     })
                                     .copied()
                             })
@@ -362,19 +375,23 @@ where
                     start_pos,
                     snap_to_ports(
                         &self.graph,
+                        user_state,
                         port_type,
                         &self.graph.inputs,
                         &port_locations,
                         cursor_pos,
+                        &self.pan_zoom,
                     ),
                 ),
                 AnyParameterId::Input(_) => (
                     snap_to_ports(
                         &self.graph,
+                        user_state,
                         port_type,
                         &self.graph.outputs,
                         &port_locations,
                         cursor_pos,
+                        &self.pan_zoom,
                     ),
                     start_pos,
                 ),
