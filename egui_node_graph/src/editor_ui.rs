@@ -133,19 +133,25 @@ where
         user_state: &mut UserState,
         prepend_responses: Vec<NodeResponse<UserResponse, NodeData>>,
     ) -> GraphResponse<UserResponse, NodeData> {
-        let clip_rect = ui.clip_rect();
         // Zoom may have never taken place, so ensure we use parent style
         if !self.pan_zoom.started {
             self.zoom(ui, 1.0);
             self.pan_zoom.started = true;
         }
 
+        let editor_rect = ui.max_rect();
+
         // Zoom only within area where graph is shown
-        if ui.rect_contains_pointer(clip_rect) {
+        if ui.rect_contains_pointer(editor_rect) {
             let scroll_delta = ui.input(|i| i.scroll_delta.y);
             if scroll_delta != 0.0 {
+                let point =
+                    ui.input(|i| i.pointer.hover_pos().unwrap_or_default() - editor_rect.center());
+
+                let zoom_before = self.pan_zoom.zoom;
                 let zoom_delta = (scroll_delta * 0.002).exp();
                 self.zoom(ui, zoom_delta);
+                self.pan_zoom.pan += point * (1.0 - self.pan_zoom.zoom / zoom_before);
             }
         }
 
@@ -169,7 +175,7 @@ where
     pub fn zoom(&mut self, ui: &Ui, zoom_delta: f32) {
         // Update zoom, and styles
         let zoom_before = self.pan_zoom.zoom;
-        self.pan_zoom.zoom(ui.clip_rect(), ui.style(), zoom_delta);
+        self.pan_zoom.zoom(ui.max_rect(), ui.style(), zoom_delta);
         if zoom_before != self.pan_zoom.zoom {
             let actual_delta = self.pan_zoom.zoom / zoom_before;
             self.update_node_positions_after_zoom(actual_delta);
